@@ -35,58 +35,65 @@ TEST_OUTPUT_DIR = "/tmp/test_output"
 
 @pytest.fixture
 def mock_playwright():
-    """Fixture to mock Playwright browser, context, and page."""
-    # Create mock objects with proper async support
-    mock_browser = AsyncMock()
-    mock_context = AsyncMock()
-    mock_page = AsyncMock()
-    
-    # Set up the mock chain with proper async return values
-    mock_browser.new_context = AsyncMock(return_value=mock_context)
-    mock_context.new_page = AsyncMock(return_value=mock_page)
-    
-    # Create a mock Playwright instance with proper async support
-    mock_playwright_instance = MagicMock()
-    mock_playwright_instance.chromium = MagicMock()
-    mock_playwright_instance.chromium.launch = AsyncMock(return_value=mock_browser)
-    
-    # Create a mock async_playwright function that returns a mock with start()
-    async def mock_async_playwright():
-        mock = MagicMock()
-        mock.start = AsyncMock(return_value=mock_playwright_instance)
-        return mock
-    
-    # Patch the async_playwright function in the stealth_browser module
-    with patch('core.automation.stealth_browser.async_playwright', new=mock_async_playwright):
-        yield mock_browser, mock_context, mock_page
+    """Fixture to mock Playwright browser and context."""
+    with patch('playwright.async_api.async_playwright') as mock_playwright:
+        # Create mock browser, context, and page
+        mock_browser = AsyncMock()
+        mock_context = AsyncMock()
+        mock_page = AsyncMock()
+        
+        # Set up the async context manager behavior
+        async def async_context_manager():
+            return mock_page
+            
+        mock_context.new_page.return_value = mock_page
+        mock_context.__aenter__.return_value = mock_context
+        mock_context.__aexit__.return_value = None
+        
+        mock_browser.new_context.return_value = mock_context
+        mock_browser_context = AsyncMock(return_value=mock_context)
+        mock_browser.new_context = mock_browser_context
+        
+        # Set up the async playwright instance
+        mock_pw_instance = AsyncMock()
+        mock_pw_instance.chromium.launch.return_value = mock_browser
+        
+        # Set up the async context manager for async_playwright
+        mock_playwright.return_value.__aenter__.return_value = mock_pw_instance
+        
+        yield mock_playwright, mock_pw_instance, mock_browser, mock_context, mock_page
 
 @pytest.mark.asyncio
 async def test_browser_initialization(mock_playwright):
-    """Test browser initialization."""
-    from core.automation import BrowserAutomation
+    """Test browser initialization with default settings."""
+    mock_playwright, mock_pw_instance, mock_browser, mock_context, mock_page = mock_playwright
     
-    mock_browser, mock_context, mock_page = mock_playwright
-    
-    # Create browser instance and test initialization
-    browser = BrowserAutomation()
-    
-    # Mock the _get_random_user_agent method to return a test user agent
-    with patch.object(browser, '_get_random_user_agent', return_value="test-user-agent"):
-        await browser.initialize()
-    
-    # Verify the browser was initialized correctly
-    assert browser.browser is not None
-    assert browser.context is not None
-    assert browser.page is not None
-    
-    # Verify the correct methods were called with expected arguments
-    mock_browser.new_context.assert_awaited_once_with(
-        viewport={'width': 1920, 'height': 1080},
-        user_agent="test-user-agent",
-        locale='en-US',
-        permissions=['clipboard-read', 'clipboard-write']
-    )
-    mock_context.new_page.assert_awaited_once()
+    # Patch the _get_random_user_agent method
+    with patch.object(BrowserAutomation, '_get_random_user_agent', return_value='test-user-agent'):
+        automation = BrowserAutomation()
+        await automation.initialize()
+        
+        # Verify the browser was launched with the correct arguments
+        mock_pw_instance.chromium.launch.assert_awaited_once_with(headless=True)
+        
+        # Verify the context was created with the correct arguments
+        mock_browser.new_context.assert_awaited_once_with(
+            user_agent='test-user-agent',
+            viewport={'width': 1920, 'height': 1080},
+            ignore_https_errors=True,
+            java_script_enabled=True
+        )
+        
+        # Verify the context was entered
+        mock_context.__aenter__.assert_awaited_once()
+        
+        # Verify the page was created
+        mock_context.new_page.assert_awaited_once()
+        
+        # Verify the page was set on the instance
+        assert automation.page is not None
+        assert automation.browser is not None
+        assert automation.context is not None
 
 @pytest.mark.asyncio
 async def test_navigate_and_extract(mock_playwright):

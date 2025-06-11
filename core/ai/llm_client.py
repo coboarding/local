@@ -398,8 +398,17 @@ Sei gesprächig, hilfreich und gib spezifische Ratschläge."""
             logger.error(f"Health check failed: {e}")
             return False
 
-    async def _get_cv_system_prompt(self, language: str = "en") -> str:
-        """Get the system prompt for CV parsing in the specified language."""
+    async def _get_cv_system_prompt(self, cv_text: str, language: str = "en") -> tuple[str, str]:
+        """Get the system prompt for CV parsing in the specified language.
+        
+        Args:
+            cv_text: The text content of the CV to analyze
+            language: Language code (en, pl, de)
+            
+        Returns:
+            tuple: (system_prompt, prompt) where system_prompt is the system message
+                  and prompt is the user message with the CV text
+        """
         # System prompts for different languages
         system_prompts = {
             "en": "You are an expert CV/resume parser. Extract structured information from CVs with high accuracy.",
@@ -471,7 +480,7 @@ CV Text:
             Dict containing structured CV information
         """
         try:
-            system_prompt, prompt = await self._get_cv_system_prompt(language)
+            system_prompt, prompt = await self._get_cv_system_prompt(cv_text, language)
             
             response = await self.generate(
                 prompt=prompt,
