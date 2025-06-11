@@ -111,7 +111,86 @@ install_system_deps() {
             gnupg \
             lsb-release \
             redis-server \
-            nginx
+            nginx \
+            libnss3 \
+            libnspr4 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libcups2 \
+            libdrm2 \
+            libxkbcommon0 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxrandr2 \
+            libgbm1 \
+            libasound2 \
+            libatspi2.0-0 \
+            libxshmfence1 \
+            libx11-xcb1 \
+            libxcb-dri3-0 \
+            libxcb1 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            libxss1 \
+            libxtst6 \
+            libnss3 \
+            libcups2 \
+            libxss1 \
+            libatspi2.0-0 \
+            libcups2 \
+            libdbus-1-3 \
+            libdrm2 \
+            libgbm1 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxkbcommon0 \
+            libxrandr2 \
+            libwayland-client0 \
+            libwayland-egl1 \
+            libwayland-server0 \
+            libxshmfence1 \
+            libxtst6 \
+            fonts-liberation \
+            libappindicator3-1 \
+            libasound2 \
+            libatk-bridge2.0-0 \
+            libatk1.0-0 \
+            libcairo2 \
+            libcups2 \
+            libdbus-1-3 \
+            libdrm2 \
+            libgbm1 \
+            libgtk-3-0 \
+            libnspr4 \
+            libnss3 \
+            libpango-1.0-0 \
+            libx11-6 \
+            libx11-xcb1 \
+            libxcb1 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            libxss1 \
+            libxtst6 \
+            xdg-utils \
+            wget \
+            xvfb \
+            x11-apps \
+            x11-xserver-utils \
+            xorg
 
         # Install Docker if not present
         if ! command -v docker &> /dev/null; then
@@ -182,20 +261,32 @@ install_python_deps() {
     python3 -m venv venv
     source venv/bin/activate
 
-    # Upgrade pip
-    pip install --upgrade pip
-
-    # Create requirements.txt
+    # Upgrade pip and setuptools
+    pip install --upgrade pip setuptools wheel
+    
+    # Install greenlet with binary wheels
+    log "Installing greenlet with binary wheels..."
+    pip install --only-binary :all: greenlet
+    
+    # Install Playwright and its dependencies
+    log "Installing Playwright and browsers..."
+    pip install playwright
+    python -m playwright install
+    python -m playwright install-deps
     cat > requirements.txt << 'EOF'
 # Web Framework
 streamlit>=1.28.0
 fastapi>=0.104.0
 uvicorn>=0.24.0
 
-# Automation
+# Automation and Browser Automation
 botright>=0.4.0
 playwright>=1.40.0
 selenium>=4.15.0
+python-dotenv>=1.0.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+python-dateutil>=2.8.2
 
 # AI & ML
 transformers>=4.35.0

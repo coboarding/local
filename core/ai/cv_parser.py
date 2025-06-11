@@ -284,34 +284,46 @@ Lebenslauf Text:
 
     async def _enhance_with_nlp(self, text_content: str, structured_data: Dict, language: str) -> Dict:
         """Enhance extraction with spaCy NLP"""
-        nlp = self.nlp_models.get(language)
-        if not nlp:
+        if not self.nlp_models.get(language):
             return {}
 
+        nlp = self.nlp_models[language]
         doc = nlp(text_content)
-
-        # Extract additional entities
-        entities = {
-            "PERSON": [],
-            "ORG": [],
-            "GPE": [],  # Geopolitical entities (countries, cities)
-            "DATE": [],
-            "MONEY": []
+        
+        enhanced_data = {
+            "skills": {
+                "technical": list(set(structured_data.get("skills", {}).get("technical", []) + 
+                                 [ent.text for ent in doc.ents if ent.label_ in ["TECH", "SKILL"]]))
+            }
         }
-
-        for ent in doc.ents:
-            if ent.label_ in entities:
-                entities[ent.label_].append(ent.text)
-
-        # Extract email and phone patterns
-        import re
-        emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text_content)
-        phones = re.findall(r'[\+]?[1-9]?[0-9]{7,15}', text_content)
-
-        enhancement = {
-            "extracted_entities": entities,
-            "additional_emails": emails,
-            "additional_phones": phones
-        }
-
-        return enhancement
+        
+        return enhanced_data
+        
+    async def analyze_text(self, cv_text: str, language: str = "en") -> Dict:
+        """
+        Analyze CV text and extract structured information.
+        
+        Args:
+            cv_text: Raw text content of the CV
+            language: Language code (default: "en")
+            
+        Returns:
+            dict: Structured information extracted from the CV
+        """
+        if not cv_text or not isinstance(cv_text, str):
+            return {"error": "Invalid CV text provided"}
+            
+        try:
+            # Process with LLM for structured extraction
+            structured_data = await self._extract_structured_data(cv_text, language)
+            
+            # Enhance with NLP if available
+            if self.nlp_models.get(language):
+                enhanced_data = await self._enhance_with_nlp(cv_text, structured_data, language)
+                structured_data.update(enhanced_data)
+                
+            return structured_data
+            
+        except Exception as e:
+            logger.error(f"Error analyzing CV text: {str(e)}")
+            return {"error": f"Failed to analyze CV: {str(e)}"}

@@ -5,6 +5,8 @@ Automate your job application process with coBoarding. This tool helps you fill 
 ## Features
 
 - **Automated Form Filling**: Intelligent detection and completion of job application forms
+- **Visual Analysis**: AI-powered detection of form elements using LLaVA for better accuracy
+- **Smart File Uploads**: Automatic detection and handling of file upload fields with support for multiple file types
 - **Multi-language Support**: English, German, and Polish interfaces and processing
 - **Smart Field Detection**: Advanced AI for accurate form field mapping
 - **Document Management**: Handle resumes, cover letters, and other application materials
@@ -24,6 +26,33 @@ Automate your job application process with coBoarding. This tool helps you fill 
    - Docker & Docker Compose (for containerized deployment)
    - Chrome or Firefox browser
    - NVIDIA Docker support (for GPU acceleration)
+
+## File Upload Support
+
+### Supported File Types
+
+- **Resume/CV**: `resume.pdf`, `cv.pdf`, `lebenslauf.pdf`
+- **Cover Letter**: `cover_letter.pdf`, `anschreiben.pdf`, `motivation.pdf`
+- **Certificates**: `certificates.pdf`, `zeugnisse.pdf`
+- **Photo**: `photo.jpg`, `bild.jpg`, `profile.jpg`
+
+### Visual Analysis Features
+
+The system uses LLaVA (a vision-language model) to:
+- Detect file upload buttons and areas visually
+- Handle custom-styled upload components
+- Provide fallback mechanisms when standard detection fails
+- Generate debug screenshots for troubleshooting
+
+### Setup Test Files
+
+Create sample files for testing:
+
+```bash
+make setup-test-files
+```
+
+This will create empty files in the `data/` directory that you can use for testing.
 
 ## Quick Start
 
@@ -75,11 +104,24 @@ python -m coboarding
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-### 5. Verify Installation
+### 5. Run the Application
 
+#### Basic Usage
 ```bash
-# Check running services
-docker-compose ps
+# Run with default settings
+make apply-job
+
+# Run with visual analysis enabled (recommended for complex forms)
+make apply-job-visual
+```
+
+#### Debugging
+```bash
+# Check logs
+tail -f job_application.log
+
+# Clean up upload artifacts
+make clean-uploads
 
 # Test the application
 make test

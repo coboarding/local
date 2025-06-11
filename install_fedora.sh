@@ -132,6 +132,66 @@ install_system_deps() {
         sqlite-devel \
         tk-devel \
         xz-devel \
+        cmake \
+        pkg-config \
+        libxkbcommon-x11 \
+        libxkbcommon \
+        libXcomposite \
+        libXdamage \
+        libXrandr \
+        libgbm \
+        libpango-1.0-0 \
+        libcairo2 \
+        libatk1.0-0 \
+        libatk-bridge2.0-0 \
+        libdrm \
+        libxshmfence \
+        libx11-xcb1 \
+        libxcb-dri3-0 \
+        libxcb1 \
+        libxcomposite1 \
+        libxcursor1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxi6 \
+        libxrandr2 \
+        libxrender1 \
+        libxss1 \
+        libxtst6 \
+        libnss3 \
+        libcups2 \
+        libx11-6 \
+        libx11-xcb1 \
+        libxcb1 \
+        libxcomposite1 \
+        libxcursor1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxi6 \
+        libxrandr2 \
+        libxrender1 \
+        libxss1 \
+        libxtst6 \
+        libnss3 \
+        libcups2 \
+        libxss1 \
+        libatspi2.0-0 \
+        libcups2 \
+        libdbus-1-3 \
+        libdrm2 \
+        libgbm1 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxrandr2 \
+        libwayland-client0 \
+        libwayland-egl1 \
+        libwayland-server0 \
+        libxshmfence1 \
+        libxtst6 \
         @development-tools
 
     # Install Node.js 18.x if not present
@@ -139,7 +199,36 @@ install_system_deps() {
         log "Installing Node.js 18.x..."
         curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
         sudo dnf install -y nodejs
+        
+        # Install required global npm packages
+        sudo npm install -g npm@latest
+        sudo npm install -g playwright
     fi
+
+    # Install Chromium dependencies
+    log "Installing Chromium dependencies..."
+    sudo dnf install -y \
+        alsa-lib \
+        atk \
+        at-spi2-atk \
+        cups-libs \
+        gtk3 \
+        libXcomposite \
+        libXcursor \
+        libXdamage \
+        libXext \
+        libXfixes \
+        libXi \
+        libXrandr \
+        libXScrnSaver \
+        libXtst \
+        pango \
+        xorg-x11-fonts-100dpi \
+        xorg-x11-fonts-75dpi \
+        xorg-x11-fonts-cyrillic \
+        xorg-x11-fonts-misc \
+        xorg-x11-fonts-Type1 \
+        xorg-x11-utils
 
     # Install Docker if not present
     if ! command -v docker &> /dev/null; then
@@ -193,6 +282,12 @@ setup_python_env() {
     # Install greenlet with binary wheels
     log "Installing greenlet with binary wheels..."
     pip install --only-binary :all: greenlet
+    
+    # Install Playwright and its dependencies
+    log "Installing Playwright and browsers..."
+    pip install playwright
+    python -m playwright install
+    python -m playwright install-deps
     
     # Install other Python dependencies
     if [[ -f "requirements.txt" ]]; then

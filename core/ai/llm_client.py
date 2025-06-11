@@ -342,21 +342,24 @@ Sei gesprächig, hilfreich und gib spezifische Ratschläge."""
             async with httpx.AsyncClient(timeout=5) as client:
                 response = await client.get(f"{self.base_url}/api/tags")
                 return response.status_code == 200
-        except:
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
             return False
-            CV / resume
-            parser.Extract
-            structured
-            information
-            from CVs
-            with high accuracy.",
+
+    async def _get_cv_system_prompt(self, language: str = "en") -> str:
+        """Get the system prompt for CV parsing in the specified language."""
+        # System prompts for different languages
+        system_prompts = {
+            "en": "You are an expert CV/resume parser. Extract structured information from CVs with high accuracy.",
             "pl": "Jesteś ekspertem w analizie CV. Wyciągnij strukturalne informacje z CV z wysoką dokładnością.",
             "de": "Du bist ein Experte für Lebenslauf-Analyse. Extrahiere strukturierte Informationen aus Lebensläufen mit hoher Genauigkeit."
         }
 
-        prompts = {
-        "en": f"""
-Extract and structure the following information from this CV/resume:
+        # Get the system prompt for the specified language, defaulting to English
+        system_prompt = system_prompts.get(language, system_prompts["en"])
+        
+        # Create the user prompt with the CV text
+        prompt = f"""Extract and structure the following information from this CV/resume:
 
 1. Personal Information (name, email, phone, location, LinkedIn, website)
 2. Professional Summary
@@ -377,96 +380,88 @@ Format the response as valid JSON with the following structure:
         "website": "..."
     }},
     "professional_summary": "...",
-    "work_experience": [...],
-    "education": [...],
+    "work_experience": [{{
+        "position": "...",
+        "company": "...",
+        "start_date": "...",
+        "end_date": "...",
+        "description": "..."
+    }}],
+    "education": [{{
+        "degree": "...",
+        "institution": "...",
+        "start_date": "...",
+        "end_date": "..."
+    }}],
     "skills": {{
-        "technical": [...],
-        "languages": [...],
-        "soft_skills": [...]
+        "technical": ["...", "..."],
+        "languages": ["..."],
+        "soft_skills": ["..."]
     }},
-    "certifications": [...],
-    "projects": [...]
+    "certifications": ["...", "..."],
+    "projects": ["..."]
 }}
 
 CV Text:
-{cv_text}
-""",
-        "pl": f"""
-Wyciągnij i ustrukturyzuj następujące informacje z tego CV:
+{cv_text}"""
+        
+        return system_prompt, prompt
 
-1. Informacje osobiste (imię, email, telefon, lokalizacja, LinkedIn, strona)
-2. Podsumowanie zawodowe
-3. Doświadczenie zawodowe (stanowisko, firma, daty, opis)
-4. Wykształcenie (stopień, uczelnia, daty)
-5. Umiejętności (techniczne, językowe, miękkie)
-6. Certyfikaty
-7. Projekty
+    async def analyze_cv(self, cv_text: str, language: str = "en") -> Dict[str, Any]:
+        """
+        Analyze a CV/resume and extract structured information.
+        
+        Args:
+            cv_text: The text content of the CV/resume
+            language: Language code (en, pl, de)
+            
+        Returns:
+            Dict containing structured CV information
+        """
+        try:
+            system_prompt, prompt = await self._get_cv_system_prompt(language)
+            
+            response = await self.generate(
+                prompt=prompt,
+                model=self.cv_model,
+                response_format="json",
+                system_prompt=system_prompt,
+                temperature=0.1
+            )
+            
+            # Parse the response if it's a string
+            if isinstance(response, str):
+                return json.loads(response)
+            return response
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse CV analysis response: {e}")
+            raise ValueError("Failed to parse CV analysis response")
+        except Exception as e:
+            logger.error(f"Error analyzing CV: {e}")
+            raise
 
-Sformatuj odpowiedź jako poprawny JSON:
-{{
-    "personal_info": {{...}},
-    "professional_summary": "...",
-    "work_experience": [...],
-    "education": [...],
-    "skills": {{...}},
-    "certifications": [...],
-    "projects": [...]
-}}
-
-Tekst CV:
-{cv_text}
-""",
-        "de": f"""
-Extrahiere und strukturiere die folgenden Informationen aus diesem Lebenslauf:
-
-1. Persönliche Informationen (Name, E-Mail, Telefon, Ort, LinkedIn, Website)
-2. Berufliche Zusammenfassung
-3. Berufserfahrung (Position, Unternehmen, Daten, Beschreibung)
-4. Ausbildung (Abschluss, Institution, Daten)
-5. Fähigkeiten (technisch, Sprachen, Soft Skills)
-6. Zertifikate
-7. Projekte
-
-Formatiere die Antwort als gültiges JSON:
-{{
-    "personal_info": {{...}},
-    "professional_summary": "...",
-    "work_experience": [...],
-    "education": [...],
-    "skills": {{...}},
-    "certifications": [...],
-    "projects": [...]
-}}
-
-Lebenslauf Text:
-{cv_text}
-"""
-
-    }
-
-    prompt = prompts.get(language, prompts["en"])
-    system_prompt = system_prompts.get(language, system_prompts["en"])
-
-    return await self.generate(
-        prompt=prompt,
-        model=self.cv_model,
-        response_format="json",
-        system_prompt=system_prompt,
-        temperature=0.1
-    )
-
-
-async def analyze_form(self, form_data: Dict, language: str = "en") -> Dict:
-    """Analyze job application form and suggest field mappings"""
-
-    system_prompts = {
-        "en": "You are an expert in analyzing job application forms. Analyze the form and suggest field mappings.",
-        "pl": "Jesteś ekspertem w analizie formularzy aplikacji do pracy. Analizuj formularz i zalecz poleMappings.",
-        "de": "Du bist ein Experte für Formularanalyse. Analyse das Formular und vorschlage FeldMappings."
-    }
-
-    prompts = {
-        "en": f"""    
+    async def analyze_form(self, form_data: Dict, language: str = "en") -> Dict:
+        """
+        Analyze job application form and suggest field mappings.
+        
+        Args:
+            form_data: Form data to analyze
+            language: Language code (en, pl, de)
+            
+        Returns:
+            Dict containing form analysis and field mappings
+        """
+        # Define system prompts for different languages
+        system_prompts = {
+            "en": "You are an expert in analyzing job application forms. Analyze the form and suggest field mappings.",
+            "pl": "Jesteś ekspertem w analizie formularzy aplikacji do pracy. Analizuj formularz i zalecz poleMappings.",
+            "de": "Du bist ein Experte für Formularanalyse. Analyse das Formular und vorschlage FeldMappings."
+        }
+        
+        # Define user prompts for different languages
+        prompts = {
+            "en": f"""    
 Analyze this job application form data and provide structured analysis:
 
 Form Data: {json.dumps(form_data, indent=2)}
@@ -486,7 +481,7 @@ Provide analysis in JSON format:
 "complexity_level": "simple/medium/complex",
 "special_requirements": [...]
 }}""",
-        "pl": f"""
+            "pl": f"""
 Analizuj dane formularza aplikacji do pracy i zaproponuj mapowanie pola:    
 
 Dane formularza: {json.dumps(form_data, indent=2)}
@@ -506,12 +501,12 @@ Podaj analizę w formacie JSON:
 "complexity_level": "simple/medium/complex",
 "special_requirements": [...]
 }}""",
-        "de": f"""
-Analyse diese Bewerbungsformular-Daten und schlage ein FeldMappings vor:
+            "de": f"""
+Analysieren Sie die Daten des Bewerbungsformulars und schlagen Sie Feldzuordnungen vor:
 
-Formular-Daten: {json.dumps(form_data, indent=2)}            
+Formulardaten: {json.dumps(form_data, indent=2)}
 
-Gib die Analyse im JSON-Format an:
+Geben Sie die Analyse im JSON-Format an:
 {{
 "form_type": "job_application",
 "required_fields": [...],
@@ -526,15 +521,28 @@ Gib die Analyse im JSON-Format an:
 "complexity_level": "simple/medium/complex",
 "special_requirements": [...]
 }}"""
-    }
+        }
 
-    prompt = prompts.get(language, prompts["en"])
-    system_prompt = system_prompts.get(language, system_prompts["en"])
+        try:
+            prompt = prompts.get(language, prompts["en"])
+            system_prompt = system_prompts.get(language, system_prompts["en"])
 
-    return await self.generate(
-        prompt=prompt,
-        model=self.form_model,
-        response_format="json",
-        system_prompt=system_prompt,
-        temperature=0.1
-    )
+            response = await self.generate(
+                prompt=prompt,
+                model=self.default_model,
+                response_format="json",
+                system_prompt=system_prompt,
+                temperature=0.1
+            )
+            
+            # Parse the response if it's a string
+            if isinstance(response, str):
+                return json.loads(response)
+            return response
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse form analysis response: {e}")
+            raise ValueError("Failed to parse form analysis response")
+        except Exception as e:
+            logger.error(f"Error analyzing form: {e}")
+            raise

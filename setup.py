@@ -7,7 +7,7 @@ setup(
     install_requires=open('requirements.txt').read().splitlines(),
     entry_points={
         'console_scripts': [
-            'coboarding-apply=coboarding.automation.job_applicator:main',
+            'coboarding-apply=coboarding.automation.job_applicator:cli',
         ],
     },
 )

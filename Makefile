@@ -44,4 +44,19 @@ install-hooks:
 
 # Run the job application automation
 apply-job:
-	$(PYTHON) -m coboarding.automation.job_applicator --url https://bewerbung.jobs/325696/buchhalter-m-w-d
+	$(PYTHON) -m coboarding.automation.job_applicator --url https://example.com/job-application
+
+# Run with visual analysis enabled
+apply-job-visual:
+	$(PYTHON) -m coboarding.automation.job_applicator --url https://example.com/job-application --visual
+
+# Prepare test files for upload
+setup-test-files:
+	mkdir -p data
+	touch data/resume.pdf data/cover_letter.pdf data/certificates.pdf data/photo.jpg
+	echo "Sample files created in data/ directory"
+
+# Clean uploaded files
+clean-uploads:
+	rm -f upload_analysis.png upload_element_*.png form_initial.png after_uploads.png
+	echo "Cleaned up upload artifacts"
