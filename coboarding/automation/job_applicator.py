@@ -24,9 +24,10 @@ logger = logging.getLogger(__name__)
 from ..ai.llm_client import LLMClient
 
 class JobApplicator:
-    def __init__(self, headless: bool = False, slow_mo: int = 100):
+    def __init__(self, headless: bool = False, slow_mo: int = 100, enable_visual: bool = False):
         self.headless = headless
         self.slow_mo = slow_mo  # Add delay between actions
+        self.enable_visual = enable_visual  # Enable LLaVA visual analysis
         self.profile = self._load_profile()
         self.llm_client = LLMClient()
         self.timeout = 60000  # 60 seconds timeout
@@ -297,8 +298,12 @@ class JobApplicator:
             screenshot_path = 'upload_analysis.png'
             await page.screenshot(path=screenshot_path, full_page=True)
             
-            # Try visual analysis with LLaVA first
-            visual_elements = await self._analyze_screenshot_with_llava(screenshot_path)
+            # Try visual analysis with LLaVA if enabled
+            visual_elements = []
+            if self.enable_visual:
+                logger.info("Visual analysis enabled, running LLaVA detection...")
+                visual_elements = await self._analyze_screenshot_with_llava(screenshot_path)
+                logger.info(f"LLaVA found {len(visual_elements)} potential upload elements")
             
             # Standard file input selectors - expanded with more variations
             file_input_selectors = [
@@ -1050,6 +1055,7 @@ def parse_args():
     parser.add_argument('--timeout', type=int, default=60000,
                       help='Global timeout in milliseconds for page operations')
     parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+    parser.add_argument('--visual', action='store_true', help='Enable LLaVA visual analysis for file upload detection')
     return parser.parse_args()
 
 async def main():
@@ -1070,7 +1076,8 @@ async def main():
     try:
         applicator = JobApplicator(
             headless=args.headless,
-            slow_mo=args.slow_mo
+            slow_mo=args.slow_mo,
+            enable_visual=args.visual
         )
         
         # Set global timeout if specified
