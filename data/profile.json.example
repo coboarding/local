@@ -1,0 +1,34 @@
+{
+  "personal_info": {
+    "first_name": "Max",
+    "last_name": "Mustermann",
+    "email": "max.mustermann@example.com",
+    "phone": "+49 123 456789",
+    "address": "Musterstraße 1, 10115 Berlin",
+    "birth_date": "1990-01-01",
+    "nationality": "German"
+  },
+  "education": [
+    {
+      "degree": "Bachelor of Science",
+      "field": "Business Administration",
+      "institution": "Freie Universität Berlin",
+      "start_date": "2010-10-01",
+      "end_date": "2014-09-30"
+    }
+  ],
+  "experience": [
+    {
+      "position": "Accountant",
+      "company": "Musterfirma GmbH",
+      "start_date": "2015-01-15",
+      "end_date": "present",
+      "description": "Responsibilities included financial reporting, tax preparation, and budget management."
+    }
+  ],
+  "skills": ["SAP FI/CO", "DATEV", "Excel", "German Tax Law"],
+  "languages": [
+    {"language": "German", "level": "Native"},
+    {"language": "English", "level": "Fluent"}
+  ]
+}

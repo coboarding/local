@@ -1,145 +1,293 @@
-# coBoarding local
+# coBoarding - AI-Powered Job Application Automation Platform
 
-coBoarding - AI-Powered Job Application Automation Platform
+Automate your job application process with coBoarding. This tool helps you fill out job application forms automatically, including platforms like bewerbung.jobs, while maintaining compliance with international employment and data protection laws.
 
-## coBoarding Setup Guide
+## Features
 
-This implementation provides a production-ready foundation that can be deployed immediately while maintaining compliance with international employment and data protection laws. 
-The modular architecture allows for easy scaling and feature additions as the business grows.
+- **Automated Form Filling**: Intelligent detection and completion of job application forms
+- **Multi-language Support**: English, German, and Polish interfaces and processing
+- **Smart Field Detection**: Advanced AI for accurate form field mapping
+- **Document Management**: Handle resumes, cover letters, and other application materials
+- **Headless Browser Automation**: Stealthy and efficient form submission
+- **GDPR Compliance**: Built-in data protection and privacy controls
+- **Local AI Processing**: Run models locally for enhanced privacy
 
 ## Prerequisites
 
 1. **Hardware Requirements:**
-   - NVIDIA GPU with 8GB+ VRAM
-   - 64GB+ RAM recommended
-   - 100GB+ storage space
+   - NVIDIA GPU with 8GB+ VRAM (recommended for best performance)
+   - 16GB+ RAM (64GB+ recommended for production)
+   - 100GB+ storage space (for models and data)
 
 2. **Software Requirements:**
-   - Docker & Docker Compose
    - Python 3.11+
-   - NVIDIA Docker support
+   - Docker & Docker Compose (for containerized deployment)
+   - Chrome or Firefox browser
+   - NVIDIA Docker support (for GPU acceleration)
 
-## Installation Steps
+## Quick Start
 
 ### 1. Clone Repository
+
 ```bash
 git clone https://github.com/your-org/coboarding.git
 cd coboarding
 ```
 
-### 2. Environment Setup
+### 2. Set Up Environment
+
 ```bash
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+make install
+
+# Or manually:
+# pip install -r requirements.txt
+
+# Set up environment variables
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
-### 3. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+### 3. Download Required Models
 
-### 4. Download Language Models
 ```bash
 # Download spaCy models
 python -m spacy download en_core_web_sm
 python -m spacy download pl_core_news_sm  
 python -m spacy download de_core_news_sm
 
-# Download Ollama models
+# Download AI models (if using local AI)
 ollama pull llava:7b
 ollama pull mistral:7b
 ```
 
-### 5. Start Services
+### 4. Start Services
+
 ```bash
-docker-compose up -d
+# For development:
+python -m coboarding
+
+# For production with Docker:
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
-### 6. Verify Installation
+### 5. Verify Installation
+
 ```bash
-# Check if all services are running
+# Check running services
 docker-compose ps
 
-# Test API
-curl http://localhost:8000/health
-
-# Access UI
-open http://localhost:8501
+# Test the application
+make test
 ```
 
-## LinkedIn API Setup
+## Configuration
 
-1. Create LinkedIn Developer Application
-2. Configure OAuth redirect URI: `http://localhost:8501/callback`
-3. Add Client ID and Secret to `.env`
-4. Apply for LinkedIn Talent Solutions partnership
+### 1. Environment Variables
 
-## Business Model Configuration
+Create a `.env` file with the following variables:
 
-1. Set up payment processor (Stripe recommended)
-2. Configure webhook endpoints
-3. Set pricing in environment variables
-4. Test payment flows in sandbox mode
+```ini
+# Required
+OPENAI_API_KEY=your_openai_api_key
+DEFAULT_LANGUAGE=de  # de, en, or pl
 
-## Production Deployment
+# Optional
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_secret
+```
 
-1. Use `docker-compose.prod.yml`
-2. Configure SSL certificates
+### 2. Profile Configuration
+
+Create a `data/profile.json` file with your personal and professional information:
+
+```json
+{
+  "personal_info": {
+    "first_name": "Max",
+    "last_name": "Mustermann",
+    "email": "your.email@example.com",
+    "phone": "+49 123 456789",
+    "address": "Musterstraße 1, 10115 Berlin",
+    "birth_date": "1990-01-01",
+    "nationality": "German"
+  },
+  "education": [
+    {
+      "degree": "Bachelor of Science",
+      "field": "Business Administration",
+      "institution": "Freie Universität Berlin",
+      "start_date": "2010-10-01",
+      "end_date": "2014-09-30"
+    }
+  ],
+  "experience": [
+    {
+      "position": "Accountant",
+      "company": "Musterfirma GmbH",
+      "start_date": "2015-01-15",
+      "end_date": "present",
+      "description": "Responsibilities included financial reporting, tax preparation, and budget management."
+    }
+  ],
+  "skills": ["SAP FI/CO", "DATEV", "Excel", "German Tax Law"],
+  "languages": [
+    {"language": "German", "level": "Native"},
+    {"language": "English", "level": "Fluent"}
+  ]
+}
+```
+
+```
+
+## Usage
+
+### Applying for a Job
+
+1. **Prepare your application materials** in the `data/` directory:
+   - `resume.pdf` - Your resume/CV
+   - `cover_letter.md` - Your cover letter template
+   - `profile.json` - Your personal information (as shown above)
+
+2. **Run the application** for a specific job:
+
+   ```bash
+   # Using make
+   make apply-job
+   
+   # Or directly with Python
+   python -m coboarding.automation.job_applicator \
+     --url "https://bewerbung.jobs/325696/buchhalter-m-w-d" \
+     --resume data/resume.pdf \
+     --cover-letter data/cover_letter.md
+   ```
+
+3. **Monitor the automation** as it fills out the application form with your details.
+
+### Available Commands
+
+```bash
+# Install dependencies
+make install
+
+# Run tests
+make test
+
+# Format code
+make format
+
+# Lint code
+make lint
+
+# Start development server
+make dev
+```
+
+## Development
+
+### Project Structure
+
+```text
+coboarding/
+├── core/                    # Core functionality
+│   ├── automation/          # Browser automation
+│   ├── ai/                  # AI and ML models
+│   └── storage/             # Data storage
+├── data/                    # Application data
+├── tests/                   # Test files
+└── Makefile                 # Build automation
+```
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+make test
+
+# Run specific test file
+pytest tests/test_forms.py -v
+```
+
+### Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add some amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## Deployment
+
+### Production Deployment
+
+1. Use the production Docker Compose file:
+
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d --build
+   ```
+
+2. Configure SSL certificates (recommended using Let's Encrypt)
 3. Set up monitoring (Prometheus + Grafana)
 4. Configure backup strategies
-5. Implement proper logging
+5. Implement proper logging and log rotation
 
 ## Troubleshooting
 
-### Common Issues:
+### Common Issues
 
-1. **GPU not detected:**
+1. **GPU not detected**
+
    ```bash
    # Install NVIDIA Docker
    sudo apt install nvidia-docker2
    sudo systemctl restart docker
    ```
 
-2. **Ollama models not loading:**
+2. **AI models not loading**
+
    ```bash
    # Check GPU memory
    nvidia-smi
    
-   # Restart Ollama
-   docker-compose restart ollama
+   # Verify model downloads
+   ollama list
    ```
 
-3. **Redis connection issues:**
-   ```bash
-   # Check Redis logs
-   docker-compose logs redis
-   
-   # Verify connection
-   redis-cli ping
-   ```
-
-4. **Form detection accuracy low:**
+3. **Form detection issues**
    - Check website anti-bot measures
-   - Adjust stealth browser settings
-   - Update form detection prompts
-   - Consider manual form mapping
+   - Adjust browser settings in `config/browser_settings.py`
+   - Update form detection prompts in `config/prompts/`
+   - Consider manual form mapping for complex sites
 
-## Monitoring and Maintenance
+4. **Connection issues**
 
-### Key Metrics to Monitor:
-- Form detection success rate
-- CV parsing accuracy
-- Application completion rate
-- Response times
-- Error rates
-- GDPR compliance (data retention)
+   ```bash
+   # Check service logs
+   docker-compose logs -f
+   
+   # Verify network connectivity
+   curl -I http://localhost:8501
+   ```
 
-### Regular Maintenance:
-- Update AI models monthly
-- Review form detection patterns
-- Clean up expired data
-- Monitor payment processing
-- Update anti-bot detection measures
+## Support
+
+For support, please open an issue on our [GitHub repository](https://github.com/yourusername/coboarding/issues).
+
+## License
+
+MIT
+
+---
+
+*coBoarding - Making job applications easier, one form at a time.*
 ```
 
 ## Project Implementation Summary

@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Redis for caching and message brokering
   redis:
     image: redis:7-alpine
     ports:
@@ -9,7 +10,10 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
     restart: unless-stopped
+    networks:
+      - coboarding-network
 
+  # Ollama for local LLM
   ollama:
     image: ollama/ollama:latest
     ports:
@@ -26,42 +30,115 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    networks:
+      - coboarding-network
 
+  # Browser automation service
+  browser:
+    image: mcr.microsoft.com/playwright:v1.43.0-jammy
+    restart: unless-stopped
+    shm_size: 2gb
+    environment:
+      - DISPLAY=:99
+      - PLAYWRIGHT_SERVER=ws://0.0.0.0:3000
+    ports:
+      - "3000:3000"
+    networks:
+      - coboarding-network
+
+  # Main API service
   coboarding-api:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379
       - OLLAMA_BASE_URL=http://ollama:11434
+      - BROWSER_WS_ENDPOINT=ws://browser:3000
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - /app/__pycache__
+      - /app/.pytest_cache
     depends_on:
       - redis
       - ollama
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - browser
     restart: unless-stopped
+    networks:
+      - coboarding-network
 
+  # Web UI service
   coboarding-ui:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     command: streamlit run ui/app.py --server.port=8501 --server.address=0.0.0.0
     ports:
       - "8501:8501"
     environment:
       - REDIS_URL=redis://redis:6379
       - OLLAMA_BASE_URL=http://ollama:11434
-    depends_on:
-      - redis
-      - ollama
-      - coboarding-api
+      - API_URL=http://coboarding-api:8000
+      - PYTHONPATH=/app
     volumes:
       - ./ui:/app/ui
       - ./data:/app/data
+      - /app/__pycache__
+    depends_on:
+      - coboarding-api
     restart: unless-stopped
+    networks:
+      - coboarding-network
 
+  # Background worker for data cleanup
   cleanup-worker:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: python workers/data_cleanup_worker.py
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - coboarding-network
+
+  # Background worker for form automation
+  form-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python workers/form_automation_worker.py
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - BROWSER_WS_ENDPOINT=ws://browser:3000
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    depends_on:
+      - redis
+      - browser
+    restart: unless-stopped
+    networks:
+      - coboarding-network
+
+networks:
+  coboarding-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  ollama_data:
     environment:
       - REDIS_URL=redis://redis:6379
     depends_on:
