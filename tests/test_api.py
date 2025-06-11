@@ -24,8 +24,21 @@ def test_health_check(test_client):
     ("/api/analyze/cv", {"text": TEST_CV}, 200),
     ("/api/analyze/job", {"text": TEST_JOB_DESCRIPTION}, 200),
 ])
-def test_analyze_endpoints(test_client, endpoint, data, expected_status):
+def test_analyze_endpoints(test_client, endpoint, data, expected_status, mock_ollama):
     """Test the analysis endpoints."""
+    # Setup mock response
+    mock_response = {
+        "status": "success",
+        "data": {
+            "skills": ["Python", "FastAPI"],
+            "experience": 5,
+            "education": [],
+            "languages": ["English"]
+        },
+        "metadata": {}
+    }
+    mock_ollama.return_value.json.return_value = mock_response
+    
     response = test_client.post(
         endpoint,
         json=data,
@@ -33,7 +46,9 @@ def test_analyze_endpoints(test_client, endpoint, data, expected_status):
     )
     assert response.status_code == expected_status
     result = response.json()
-    assert "result" in result or "error" in result
+    assert "status" in result
+    assert "data" in result
+    assert result["status"] == "success"
 
 def test_analyze_without_api_key(test_client):
     """Test that API key is required."""
@@ -42,7 +57,9 @@ def test_analyze_without_api_key(test_client):
         json={"text": TEST_CV}
     )
     assert response.status_code == 403
-    assert "Not authenticated" in response.json()["detail"]
+    result = response.json()
+    assert "detail" in result
+    assert "Not authenticated" in result["detail"]
 
 def test_analyze_missing_text(test_client):
     """Test that text parameter is required."""
@@ -52,4 +69,7 @@ def test_analyze_missing_text(test_client):
         headers={"X-API-Key": "test-api-key"}
     )
     assert response.status_code == 422
-    assert "text" in response.text.lower()
+    result = response.json()
+    assert "detail" in result
+    assert any("field required" in str(err.get("msg", "")).lower() 
+              for err in result.get("detail", []) if isinstance(err, dict))

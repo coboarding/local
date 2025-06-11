@@ -3,12 +3,13 @@ Upload API router for handling file uploads and processing.
 """
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 import os
 import shutil
 from datetime import datetime
 from pathlib import Path
+from pydantic import BaseModel
 
 # Create the router
 router = APIRouter(

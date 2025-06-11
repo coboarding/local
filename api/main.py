@@ -10,7 +10,7 @@ import logging
 import os
 
 # Import routers
-from .routes import candidates, upload, automation, admin
+from .routes import candidates, upload, automation, admin, analyze
 from .middleware.auth import verify_api_key
 from .middleware.rate_limit import rate_limit_middleware
 from .middleware.compliance import compliance_middleware
@@ -64,6 +64,13 @@ app.include_router(
     admin.router,
     prefix="/api/admin",
     tags=["admin"],
+)
+
+app.include_router(
+    analyze.router,
+    prefix="/api/analyze",
+    tags=["analyze"],
+    dependencies=[Depends(verify_api_key)],
 )
 
 # Health check endpoint
