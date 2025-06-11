@@ -1,7 +1,6 @@
-# coBoarding local
- coBoarding - AI-Powered Job Application Automation Platform
+# Setup Instructions (`docs/setup.md`)
 
-coBoarding Setup Guide
+# coBoarding Setup Guide
 
 ## Prerequisites
 

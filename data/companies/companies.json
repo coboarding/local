@@ -1,0 +1,63 @@
+[
+  {
+    "id": "google_pl",
+    "name": "Google Poland",
+    "description": "Global technology company focused on search, advertising, and cloud computing",
+    "industry": "Technology",
+    "location": "Warsaw, Poland",
+    "size": "enterprise",
+    "application_url": "https://careers.google.com/jobs/",
+    "urgent_hiring": false,
+    "slack_webhook": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+    "teams_webhook": "https://outlook.office.com/webhook/...",
+    "hiring_for": ["Software Engineer", "Product Manager", "Data Scientist"],
+    "languages": ["en", "pl"],
+    "benefits": ["Remote work", "Stock options", "Health insurance"],
+    "contact_email": "talent@google.com"
+  },
+  {
+    "id": "allegro_pl",
+    "name": "Allegro",
+    "description": "Leading e-commerce platform in Poland and Central Europe",
+    "industry": "E-commerce",
+    "location": "Kraków, Poland", 
+    "size": "large",
+    "application_url": "https://allegro.tech/careers/",
+    "urgent_hiring": true,
+    "slack_webhook": "https://hooks.slack.com/services/T11111111/B11111111/YYYYYYYYYYYYYYYYYYYYYYYY",
+    "hiring_for": ["Backend Developer", "Frontend Developer", "DevOps Engineer"],
+    "languages": ["pl", "en"],
+    "benefits": ["Flexible hours", "Training budget", "Modern office"],
+    "contact_email": "jobs@allegro.pl"
+  },
+  {
+    "id": "sap_de",
+    "name": "SAP Germany",
+    "description": "Enterprise software company specializing in business applications",
+    "industry": "Enterprise Software",
+    "location": "Berlin, Germany",
+    "size": "enterprise", 
+    "application_url": "https://jobs.sap.com/",
+    "urgent_hiring": false,
+    "teams_webhook": "https://outlook.office.com/webhook/...",
+    "hiring_for": ["Cloud Architect", "Sales Engineer", "UI/UX Designer"],
+    "languages": ["de", "en"],
+    "benefits": ["Pension plan", "Sabbatical", "Global mobility"],
+    "contact_email": "recruiting@sap.com"
+  },
+  {
+    "id": "spotify_global",
+    "name": "Spotify",
+    "description": "Audio streaming and media services provider",
+    "industry": "Media & Entertainment",
+    "location": "Remote/Stockholm",
+    "size": "large",
+    "application_url": "https://www.lifeatspotify.com/jobs",
+    "urgent_hiring": true,
+    "slack_webhook": "https://hooks.slack.com/services/T22222222/B22222222/ZZZZZZZZZZZZZZZZZZZZZZZZ",
+    "hiring_for": ["Machine Learning Engineer", "Product Designer", "Data Engineer"],
+    "languages": ["en"],
+    "benefits": ["Equity program", "Wellness allowance", "Parental leave"],
+    "contact_email": "talent@spotify.com"
+  }
+]

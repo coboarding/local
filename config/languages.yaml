@@ -1,0 +1,32 @@
+en:
+  ui:
+    title: "coBoarding - AI Job Application Assistant"
+    upload_cv: "Upload your CV"
+    chat_placeholder: "Ask me anything about your application..."
+    select_companies: "Select companies to apply to"
+    start_automation: "Start Application Process"
+  prompts:
+    cv_extraction: "Extract personal information, skills, and experience from this CV in English"
+    form_analysis: "Analyze this job application form and identify all required fields"
+
+pl:
+  ui:
+    title: "coBoarding - AI Asystent Aplikacji o Pracę"
+    upload_cv: "Wgraj swoje CV"
+    chat_placeholder: "Zapytaj mnie o cokolwiek związane z Twoją aplikacją..."
+    select_companies: "Wybierz firmy, do których chcesz aplikować"
+    start_automation: "Rozpocznij Proces Aplikacji"
+  prompts:
+    cv_extraction: "Wyciągnij informacje osobiste, umiejętności i doświadczenie z tego CV po polsku"
+    form_analysis: "Przeanalizuj ten formularz aplikacji o pracę i zidentyfikuj wszystkie wymagane pola"
+
+de:
+  ui:
+    title: "coBoarding - KI Bewerbungsassistent"
+    upload_cv: "Laden Sie Ihren Lebenslauf hoch"
+    chat_placeholder: "Fragen Sie mich alles über Ihre Bewerbung..."
+    select_companies: "Wählen Sie Unternehmen für Ihre Bewerbung aus"
+    start_automation: "Bewerbungsprozess starten"
+  prompts:
+    cv_extraction: "Extrahiere persönliche Informationen, Fähigkeiten und Erfahrungen aus diesem Lebenslauf auf Deutsch"
+    form_analysis: "Analysiere dieses Bewerbungsformular und identifiziere alle erforderlichen Felder"

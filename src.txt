@@ -1,0 +1,93 @@
+coboarding/
+├── README.md
+├── docker-compose.yml
+├── requirements.txt
+├── .env.example
+├── config/
+│   ├── settings.py
+│   ├── languages.yaml
+│   └── models.yaml
+├── core/
+│   ├── __init__.py
+│   ├── automation/
+│   │   ├── __init__.py
+│   │   ├── form_detector.py
+│   │   ├── field_mapper.py
+│   │   ├── stealth_browser.py
+│   │   └── captcha_solver.py
+│   ├── ai/
+│   │   ├── __init__.py
+│   │   ├── llm_client.py
+│   │   ├── cv_parser.py
+│   │   ├── form_analyzer.py
+│   │   └── vision_processor.py
+│   ├── integrations/
+│   │   ├── __init__.py
+│   │   ├── linkedin_api.py
+│   │   ├── slack_bot.py
+│   │   ├── teams_webhook.py
+│   │   ├── gmail_client.py
+│   │   └── whatsapp_client.py
+│   └── storage/
+│       ├── __init__.py
+│       ├── redis_client.py
+│       ├── models.py
+│       └── ttl_manager.py
+├── api/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── upload.py
+│   │   ├── automation.py
+│   │   ├── candidates.py
+│   │   └── admin.py
+│   └── middleware/
+│       ├── __init__.py
+│       ├── auth.py
+│       ├── rate_limit.py
+│       └── compliance.py
+├── ui/
+│   ├── app.py
+│   ├── components/
+│   │   ├── __init__.py
+│   │   ├── chat.py
+│   │   ├── upload.py
+│   │   ├── company_selector.py
+│   │   └── progress_tracker.py
+│   ├── locales/
+│   │   ├── en.yaml
+│   │   ├── pl.yaml
+│   │   └── de.yaml
+│   └── assets/
+│       ├── style.css
+│       └── logo.png
+├── workers/
+│   ├── __init__.py
+│   ├── form_automation_worker.py
+│   ├── notification_worker.py
+│   └── data_cleanup_worker.py
+├── data/
+│   ├── companies/
+│   │   ├── companies.json
+│   │   └── job_boards.json
+│   ├── prompts/
+│   │   ├── cv_extraction.txt
+│   │   ├── form_analysis.txt
+│   │   └── field_mapping.txt
+│   └── models/
+│       └── spacy_cv_model/
+├── tests/
+│   ├── __init__.py
+│   ├── test_automation.py
+│   ├── test_ai.py
+│   └── test_integrations.py
+├── deployment/
+│   ├── Dockerfile
+│   ├── docker-compose.prod.yml
+│   ├── nginx.conf
+│   └── supervisord.conf
+└── docs/
+    ├── setup.md
+    ├── api.md
+    └── compliance.md
