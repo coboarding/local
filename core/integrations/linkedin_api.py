@@ -3,7 +3,7 @@ import asyncio
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import logging
-from config.settings import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

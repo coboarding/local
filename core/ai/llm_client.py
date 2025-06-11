@@ -3,7 +3,7 @@ import httpx
 import json
 from typing import Dict, List, Optional, Any, Union
 import logging
-from config.settings import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,47 @@ class LLMClient:
             logger.error(f"Unexpected error: {e}")
             raise
 
+    async def analyze_cv(self, cv_text: str) -> Dict[str, Any]:
+        """Analyze a CV and extract structured information.
+        
+        Args:
+            cv_text: The text content of the CV to analyze
+            
+        Returns:
+            Dict containing structured CV information
+            
+        Raises:
+            Exception: If there's an error during analysis
+        """
+        prompt = f"""Analyze the following CV and extract the following information in JSON format:
+        - skills: List of skills mentioned
+        - experience: Years of experience (as a number)
+        - role: Current or most recent role
+        - education: List of education entries
+        
+        CV:
+        {cv_text}
+        
+        Return only the JSON object, no other text."""
+        
+        try:
+            result = await self.generate(
+                prompt=prompt,
+                model=self.cv_model,
+                response_format="json",
+                temperature=0.1
+            )
+            
+            # Ensure we have the expected structure
+            if not isinstance(result, dict):
+                return {"error": "Invalid response format from CV analysis"}
+                
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error analyzing CV: {str(e)}")
+            raise Exception(f"Failed to analyze CV: {str(e)}")
+
     async def chat(self,
                    messages: List[Dict[str, str]],
                    model: Optional[str] = None,
@@ -98,14 +139,25 @@ class LLMClient:
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
+                # Convert chat messages to a single prompt for the generate endpoint
+                prompt = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages])
+                
+                # Use the generate endpoint instead of chat
                 response = await client.post(
-                    f"{self.base_url}/api/chat",
-                    json=payload
+                    f"{self.base_url}/api/generate",
+                    json={
+                        "model": model or self.default_model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "temperature": temperature
+                        }
+                    }
                 )
                 response.raise_for_status()
 
                 result = response.json()
-                return result.get("message", {}).get("content", "")
+                return result.get("response", "")
 
         except Exception as e:
             logger.error(f"Chat error: {e}")

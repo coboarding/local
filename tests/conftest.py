@@ -3,38 +3,41 @@ Test configuration and fixtures for the coBoarding test suite.
 """
 import os
 import sys
+from pathlib import Path
+from unittest.mock import MagicMock, AsyncMock, patch
+
+# Add the project root to the Python path first
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Mock hcaptcha_challenger.agents before any other imports
+mock_agents = MagicMock()
+mock_agents.AgentT = MagicMock()
+
+# Patch sys.modules before any other imports
+sys.modules['hcaptcha_challenger.agents'] = mock_agents
+
+# Now import the rest of the dependencies
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch, MagicMock
-
-# Mock hcaptcha_challenger.agents before any imports
-sys.modules['hcaptcha_challenger.agents'] = MagicMock()
-
-# Mock the AgentT class
-AgentT = MagicMock()
-sys.modules['hcaptcha_challenger.agents'].AgentT = AgentT
-
-# Add the project root to the Python path
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Mock environment variables for testing
 os.environ.update({
     "REDIS_URL": "redis://test-redis:6379/0",
     "OLLAMA_BASE_URL": "http://test-ollama:11434",
     "SECRET_KEY": "test-secret-key",
-    "API_KEY": "test-api-key"
+    "API_KEY": "test-api-key",
+    "SUPPORTED_LANGUAGES": "en,pl,de",
+    "ENVIRONMENT": "test",
+    "LOG_LEVEL": "INFO"
 })
 
 @pytest.fixture(scope="module")
 def test_client():
     """Create a test client for the FastAPI application."""
-    # Apply the mock before importing app
-    with patch.dict('sys.modules', {'hcaptcha_challenger.agents': MagicMock()}):
-        from api.main import app
-        with TestClient(app) as client:
-            yield client
+    # Import here to ensure environment variables are set first
+    from api.main import app
+    with TestClient(app) as client:
+        yield client
 
 @pytest.fixture
 def mock_redis():
@@ -55,3 +58,27 @@ def mock_ollama():
 def test_data_dir():
     """Return the path to the test data directory."""
     return os.path.join(os.path.dirname(__file__), 'data')
+
+@pytest.fixture(scope="module")
+async def mock_playwright():
+    """Create a mock Playwright browser instance."""
+    mock_browser = AsyncMock()
+    mock_context = AsyncMock()
+    mock_page = AsyncMock()
+    
+    # Set up the mock chain
+    mock_browser.new_context.return_value = mock_context
+    mock_context.new_page.return_value = mock_page
+    
+    # Create a mock Playwright instance with proper async support
+    mock_playwright_instance = AsyncMock()
+    mock_playwright_instance.start.return_value = mock_playwright_instance
+    mock_playwright_instance.chromium.launch.return_value = mock_browser
+    
+    # Create a coroutine function that returns the mock Playwright instance
+    async def mock_async_playwright():
+        return mock_playwright_instance
+    
+    # Patch the async_playwright function
+    with patch('core.automation.async_playwright', new=mock_async_playwright):
+        yield mock_browser, mock_context, mock_page

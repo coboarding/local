@@ -3,11 +3,12 @@ LLaVA client for visual analysis of web pages to detect file upload elements.
 """
 import base64
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-import httpx
-from PIL import Image
 import io
+import json
+import os
+from typing import Dict, List, Any, Optional, Union
+from PIL import Image, UnidentifiedImageError
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -20,65 +21,140 @@ class LLaVAClient:
         Args:
             base_url: Base URL for the Ollama API (default: http://localhost:11434)
         """
-        self.base_url = base_url
-        self.model_name = "llava"
-        self.timeout = 60  # seconds
+        self.base_url = base_url.rstrip('/')
+        self.model_name = "llava:7b"  # Specify the exact model name with tag
+        self.timeout = 300  # Increase timeout for image processing
+    
+    async def _process_image(self, image_path: str) -> str:
+        """Process and encode an image to base64.
+        
+        Args:
+            image_path: Path to the image file
+            
+        Returns:
+            Base64 encoded image string
+            
+        Raises:
+            FileNotFoundError: If image file doesn't exist
+            UnidentifiedImageError: If image cannot be identified
+            Exception: For other image processing errors
+        """
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"Image file not found: {image_path}")
+            
+        try:
+            with Image.open(image_path) as img:
+                # Convert image to RGB if it's not already
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Save image to bytes buffer
+                buffer = io.BytesIO()
+                img.save(buffer, format='JPEG')
+                
+                # Encode image to base64
+                return base64.b64encode(buffer.getvalue()).decode('utf-8')
+                
+        except UnidentifiedImageError as e:
+            logger.error(f"Could not identify image file: {image_path}")
+            raise
+        except Exception as e:
+            logger.error(f"Error processing image {image_path}: {str(e)}")
+            raise
     
     async def analyze_image(self, image_path: str, prompt: str) -> Dict[str, Any]:
-        """Analyze an image using LLaVA.
+        """Analyze an image using LLaVA via Ollama CLI.
         
         Args:
             image_path: Path to the image file to analyze
             prompt: The prompt to use for analysis
             
         Returns:
-            Dict containing the analysis results
+            Dict containing the analysis results with keys:
+            - response: The model's response text
+            - model: The model used for analysis
+            - error: Error message if any
         """
         try:
-            # Read and encode the image
+            # Convert image to JPEG if needed
             with Image.open(image_path) as img:
-                # Convert to RGB if needed
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 
-                # Convert to bytes
-                buffered = io.BytesIO()
-                img.save(buffered, format="JPEG")
-                img_bytes = buffered.getvalue()
-                img_str = base64.b64encode(img_bytes).decode('utf-8')
+                # Create a temporary file for the converted image
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_img:
+                    img.save(tmp_img, format='JPEG')
+                    tmp_img_path = tmp_img.name
             
-            # Prepare the request payload for chat completion
-            payload = {
-                "model": self.model_name,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt,
-                        "images": [img_str]
-                    }
-                ],
-                "stream": False
-            }
-            
-            # Make the request to the chat completion endpoint
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(
-                    f"{self.base_url}/api/chat",
-                    json=payload,
-                    headers={"Content-Type": "application/json"}
-                )
-                response.raise_for_status()
+            try:
+                # Build the command
+                cmd = [
+                    'ollama', 'run',
+                    '--format', 'json',
+                    self.model_name,
+                    f'[img-1] {prompt}'
+                ]
                 
-                result = response.json()
-                return {
-                    "response": result.get("message", {}).get("content", ""),
-                    "model": result.get("model", ""),
-                    "created_at": result.get("created_at", "")
-                }
+                # Run the command with the image as input
+                process = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                
+                # Read the image data
+                with open(tmp_img_path, 'rb') as f:
+                    image_data = f.read()
+                
+                # Send the image data to the process
+                stdout, stderr = await process.communicate(input=image_data)
+                
+                # Clean up the temporary file
+                try:
+                    os.unlink(tmp_img_path)
+                except Exception as e:
+                    logger.warning(f"Failed to delete temporary file {tmp_img_path}: {e}")
+                
+                if process.returncode != 0:
+                    error_msg = stderr.decode('utf-8') if stderr else 'Unknown error'
+                    return {
+                        'response': '',
+                        'model': self.model_name,
+                        'error': f'Ollama CLI error: {error_msg}'
+                    }
+                
+                # Parse the JSON response
+                response_text = stdout.decode('utf-8')
+                try:
+                    response_data = json.loads(response_text)
+                    if isinstance(response_data, dict):
+                        return {
+                            "response": response_data.get("response", ""),
+                            "model": response_data.get("model", self.model_name),
+                            "created_at": response_data.get("created_at", ""),
+                            "success": True
+                        }
+                except json.JSONDecodeError:
+                    # Return the raw response if not JSON
+                    return {
+                        "response": response_text,
+                        "model": self.model_name,
+                        "created_at": "",
+                        "success": True
+                    }
+                
+            except httpx.HTTPStatusError as e:
+                error_msg = f"HTTP error {e.response.status_code}: {e.response.text}"
+                logger.error(error_msg)
+                raise
+            except Exception as e:
+                logger.error(f"Error in analyze_image: {str(e)}", exc_info=True)
+                raise
                 
         except Exception as e:
             logger.error(f"Error analyzing image with LLaVA: {str(e)}")
-            return {"error": str(e)}
+            return {"error": str(e), "success": False}
     
     async def detect_upload_elements(self, screenshot_path: str) -> List[Dict[str, Any]]:
         """Detect file upload elements in a screenshot.

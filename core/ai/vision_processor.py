@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 from PIL import Image
 import io
 import logging
-from config.settings import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

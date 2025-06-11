@@ -87,3 +87,6 @@ async def delete_candidate(candidate_id: str):
         raise HTTPException(status_code=404, detail="Candidate not found")
     del candidates_db[candidate_id]
     return None
+
+# Export the router
+__all__ = ["router"]

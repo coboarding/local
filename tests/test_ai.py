@@ -2,53 +2,74 @@
 Tests for AI functionality.
 """
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Test data
 TEST_CV = """John Doe
 Senior Software Engineer
 5+ years of experience in Python and FastAPI"""
 
-def test_cv_analysis(mock_ollama):
-    """Test CV analysis with mock Ollama response."""
+@pytest.fixture
+def mock_llm_client():
+    """Fixture to mock the LLMClient."""
+    with patch('core.ai.llm_client.LLMClient') as mock_client:
+        yield mock_client()
+
+@pytest.mark.asyncio
+async def test_cv_analysis(mock_llm_client):
+    """Test CV analysis with mock LLM response."""
     from core.ai import analyze_cv
     
-    # Mock Ollama response
-    mock_response = {
-        "response": "{\"skills\": [\"Python\", \"FastAPI\"], \"experience\": 5, \"role\": \"Senior Software Engineer\"}"
-    }
-    mock_ollama.return_value.json.return_value = mock_response
+    # Mock the analyze_cv method
+    mock_llm_client.analyze_cv = AsyncMock(return_value={
+        "skills": ["Python", "FastAPI"],
+        "experience": 5,
+        "role": "Senior Software Engineer"
+    })
     
-    result = analyze_cv(TEST_CV)
+    result = await analyze_cv(TEST_CV)
     
+    # Verify the result
     assert isinstance(result, dict)
     assert "skills" in result
     assert "Python" in result["skills"]
     assert result["experience"] == 5
     assert result["role"] == "Senior Software Engineer"
+    
+    # Verify the method was called with the correct arguments
+    mock_llm_client.analyze_cv.assert_awaited_once_with(TEST_CV)
 
-def test_ai_error_handling(mock_ollama):
+@pytest.mark.asyncio
+async def test_ai_error_handling(mock_llm_client):
     """Test error handling in AI functions."""
     from core.ai import analyze_cv
     
-    # Simulate API error
-    mock_ollama.side_effect = Exception("API Error")
+    # Simulate an error in the LLM client
+    mock_llm_client.analyze_cv = AsyncMock(side_effect=Exception("API Error"))
     
+    # Test that the exception is properly propagated
     with pytest.raises(Exception) as exc_info:
-        analyze_cv(TEST_CV)
+        await analyze_cv(TEST_CV)
     assert "API Error" in str(exc_info.value)
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("input_text, expected_type", [
     ("5+ years of experience", dict),
     ("", dict),  # Empty input
     (None, dict),  # None input
 ])
-def test_analyze_cv_edge_cases(mock_ollama, input_text, expected_type):
+async def test_analyze_cv_edge_cases(mock_llm_client, input_text, expected_type):
     """Test edge cases for CV analysis."""
     from core.ai import analyze_cv
     
-    # Mock successful but empty response
-    mock_ollama.return_value.json.return_value = {"response": "{}"}
+    # Mock a successful but empty response
+    mock_llm_client.analyze_cv = AsyncMock(return_value={"skills": [], "experience": 0})
     
-    result = analyze_cv(input_text)
+    result = await analyze_cv(input_text)
     assert isinstance(result, expected_type)
+    
+    # Verify the method was called with the correct arguments
+    if input_text is not None:
+        mock_llm_client.analyze_cv.assert_awaited_once_with(input_text)
+    else:
+        mock_llm_client.analyze_cv.assert_awaited_once_with("")

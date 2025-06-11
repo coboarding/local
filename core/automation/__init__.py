@@ -126,23 +126,35 @@ def validate_selector(selector: str) -> bool:
         selector: The CSS selector to validate
         
     Returns:
-        bool: True if the selector is valid, False otherwise
+        bool: True if the selector is valid
+        
+    Raises:
+        ValueError: If the selector is invalid
     """
     if not selector or not isinstance(selector, str):
-        return False
+        raise ValueError("Selector must be a non-empty string")
     
-    # Basic validation - check if it starts with a valid CSS selector character
-    first_char = selector[0]
-    valid_starts = [
-        '#', '.', '[',  # ID, class, attribute
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-        '*', ' ', '>', '+', '~'  # Combinators and universal selector
+    # Basic validation - check for invalid characters
+    import re
+    
+    # Regex pattern for valid CSS selectors
+    # This is a simplified version that covers most common cases
+    pattern = r'^[a-zA-Z0-9_\-\[\]="\'\s>+~#.:*^$|,()]+$'
+    
+    if not re.match(pattern, selector):
+        raise ValueError(f"Invalid CSS selector: {selector}")
+    
+    # Check for common invalid patterns
+    invalid_patterns = [
+        '**', '//', '\\', '&&', '||', '!!', '[]', '()',
+        '  ', '>>', '++', '~~', '..', '##', '::', ',,',
     ]
     
-    return first_char in valid_starts
+    for pattern in invalid_patterns:
+        if pattern in selector:
+            raise ValueError(f"Invalid pattern in selector: {pattern}")
+    
+    return True
 
 
 __all__ = ['BrowserAutomation', 'validate_selector', 'StealthBrowser']

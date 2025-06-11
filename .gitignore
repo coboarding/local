@@ -1,6 +1,7 @@
 yolov8m-seg.pt
 yolo*
 .png
+venv*
 .idea
 .env
 venv
