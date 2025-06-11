@@ -1,4 +1,4 @@
-# coBoarding - AI-Powered Job Application Automation Platform
+# coBoarding - AI-Powered Job Application Automation
 
 Automate your job application process with coBoarding. This tool helps you fill out job application forms automatically, including platforms like bewerbung.jobs, while maintaining compliance with international employment and data protection laws.
 
@@ -17,42 +17,17 @@ Automate your job application process with coBoarding. This tool helps you fill 
 ## Prerequisites
 
 1. **Hardware Requirements:**
-   - NVIDIA GPU with 8GB+ VRAM (recommended for best performance)
-   - 16GB+ RAM (64GB+ recommended for production)
-   - 100GB+ storage space (for models and data)
+   - CPU: x86_64 or ARM64 processor
+   - RAM: 8GB minimum, 16GB+ recommended
+   - Storage: 10GB+ free space (for models and data)
+   - GPU: Optional but recommended for better performance
 
 2. **Software Requirements:**
    - Python 3.11+
-   - Docker & Docker Compose (for containerized deployment)
+   - pip (Python package manager)
+   - curl or wget
    - Chrome or Firefox browser
-   - NVIDIA Docker support (for GPU acceleration)
-
-## File Upload Support
-
-### Supported File Types
-
-- **Resume/CV**: `resume.pdf`, `cv.pdf`, `lebenslauf.pdf`
-- **Cover Letter**: `cover_letter.pdf`, `anschreiben.pdf`, `motivation.pdf`
-- **Certificates**: `certificates.pdf`, `zeugnisse.pdf`
-- **Photo**: `photo.jpg`, `bild.jpg`, `profile.jpg`
-
-### Visual Analysis Features
-
-The system uses LLaVA (a vision-language model) to:
-- Detect file upload buttons and areas visually
-- Handle custom-styled upload components
-- Provide fallback mechanisms when standard detection fails
-- Generate debug screenshots for troubleshooting
-
-### Setup Test Files
-
-Create sample files for testing:
-
-```bash
-make setup-test-files
-```
-
-This will create empty files in the `data/` directory that you can use for testing.
+   - Systemd (for service management on Linux)
 
 ## Quick Start
 
@@ -73,331 +48,119 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 make install
 
-# Or manually:
-# pip install -r requirements.txt
-
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration if needed
 ```
 
-### 3. Download Required Models
+### 3. Install Ollama and Required Models
 
 ```bash
-# Download spaCy models
-python -m spacy download en_core_web_sm
-python -m spacy download pl_core_news_sm  
-python -m spacy download de_core_news_sm
+# Install Ollama and download LLaVA model
+make setup-ollama
 
-# Download AI models (if using local AI)
-ollama pull llava:7b
+# Or run the installation script directly:
+chmod +x install_ollama.sh
+./install_ollama.sh
+
+# Download additional AI models (optional)
 ollama pull mistral:7b
 ```
 
 ### 4. Start Services
 
-```bash
-# For development:
-python -m coboarding
+Start the Ollama service if not already running:
 
-# For production with Docker:
-docker-compose -f docker-compose.prod.yml up -d
+```bash
+# Start Ollama service
+make start-ollama
+
+# Check Ollama status
+make check-ollama
 ```
 
 ### 5. Run the Application
 
-#### Basic Usage
 ```bash
-# Run with default settings
-make apply-job
+# For development with visual analysis enabled:
+python -m coboarding.automation.job_applicator --url YOUR_JOB_POSTING_URL --visual
 
-# Run with visual analysis enabled (recommended for complex forms)
-make apply-job-visual
+# Or use the Makefile target:
+make apply-job-visual URL=YOUR_JOB_POSTING_URL
+
+# For standard mode (without visual analysis):
+make apply-job URL=YOUR_JOB_POSTING_URL
 ```
 
-#### Debugging
-```bash
-# Check logs
-tail -f job_application.log
+## File Upload Support
 
-# Clean up upload artifacts
-make clean-uploads
+### Supported File Types
 
-# Test the application
-make test
-```
+- **Resume/CV**: `resume.pdf`, `cv.pdf`, `lebenslauf.pdf`
+- **Cover Letter**: `cover_letter.pdf`, `anschreiben.pdf`, `motivation.pdf`
+- **Certificates**: `certificates.pdf`, `zeugnisse.pdf`
+- **Photo**: `photo.jpg`, `bild.jpg`, `profile.jpg`
 
-## Configuration
+### Visual Analysis Features
 
-### 1. Environment Variables
+The system uses LLaVA (a vision-language model) to:
+- Detect file upload buttons and areas visually
+- Handle custom-styled upload components
+- Provide fallback mechanisms when standard detection fails
+- Generate debug screenshots for troubleshooting
 
-Create a `.env` file with the following variables:
-
-```ini
-# Required
-OPENAI_API_KEY=your_openai_api_key
-DEFAULT_LANGUAGE=de  # de, en, or pl
-
-# Optional
-LINKEDIN_CLIENT_ID=your_linkedin_client_id
-LINKEDIN_CLIENT_SECRET=your_linkedin_secret
-```
-
-### 2. Profile Configuration
-
-Create a `data/profile.json` file with your personal and professional information:
-
-```json
-{
-  "personal_info": {
-    "first_name": "Max",
-    "last_name": "Mustermann",
-    "email": "your.email@example.com",
-    "phone": "+49 123 456789",
-    "address": "Musterstraße 1, 10115 Berlin",
-    "birth_date": "1990-01-01",
-    "nationality": "German"
-  },
-  "education": [
-    {
-      "degree": "Bachelor of Science",
-      "field": "Business Administration",
-      "institution": "Freie Universität Berlin",
-      "start_date": "2010-10-01",
-      "end_date": "2014-09-30"
-    }
-  ],
-  "experience": [
-    {
-      "position": "Accountant",
-      "company": "Musterfirma GmbH",
-      "start_date": "2015-01-15",
-      "end_date": "present",
-      "description": "Responsibilities included financial reporting, tax preparation, and budget management."
-    }
-  ],
-  "skills": ["SAP FI/CO", "DATEV", "Excel", "German Tax Law"],
-  "languages": [
-    {"language": "German", "level": "Native"},
-    {"language": "English", "level": "Fluent"}
-  ]
-}
-```
-
-```
-
-## Usage
-
-### Applying for a Job
-
-1. **Prepare your application materials** in the `data/` directory:
-   - `resume.pdf` - Your resume/CV
-   - `cover_letter.md` - Your cover letter template
-   - `profile.json` - Your personal information (as shown above)
-
-2. **Run the application** for a specific job:
-
-   ```bash
-   # Using make
-   make apply-job
-   
-   # Or directly with Python
-   python -m coboarding.automation.job_applicator \
-     --url "https://bewerbung.jobs/325696/buchhalter-m-w-d" \
-     --resume data/resume.pdf \
-     --cover-letter data/cover_letter.md
-   ```
-
-3. **Monitor the automation** as it fills out the application form with your details.
-
-### Available Commands
+## Managing Ollama Service
 
 ```bash
-# Install dependencies
-make install
+# Start the Ollama service
+make start-ollama
 
-# Run tests
-make test
+# Stop the Ollama service
+make stop-ollama
 
-# Format code
-make format
+# Check if Ollama is running
+make check-ollama
 
-# Lint code
-make lint
-
-# Start development server
-make dev
+# Install/update Ollama and LLaVA model
+make setup-ollama
 ```
-
-## Development
-
-### Project Structure
-
-```text
-coboarding/
-├── core/                    # Core functionality
-│   ├── automation/          # Browser automation
-│   ├── ai/                  # AI and ML models
-│   └── storage/             # Data storage
-├── data/                    # Application data
-├── tests/                   # Test files
-└── Makefile                 # Build automation
-```
-
-## Development
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run specific test file
-pytest tests/test_forms.py -v
-```
-
-### Contributing
-
-We welcome contributions! Here's how to get started:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add some amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-## Deployment
-
-### Production Deployment
-
-1. Use the production Docker Compose file:
-
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d --build
-   ```
-
-2. Configure SSL certificates (recommended using Let's Encrypt)
-3. Set up monitoring (Prometheus + Grafana)
-4. Configure backup strategies
-5. Implement proper logging and log rotation
 
 ## Troubleshooting
 
-### Common Issues
+### Ollama Service Issues
 
-1. **GPU not detected**
+If you encounter issues with the Ollama service:
 
+1. Check if the service is running:
    ```bash
-   # Install NVIDIA Docker
-   sudo apt install nvidia-docker2
-   sudo systemctl restart docker
+   systemctl --user status ollama
    ```
 
-2. **AI models not loading**
-
+2. View service logs:
    ```bash
-   # Check GPU memory
-   nvidia-smi
-   
-   # Verify model downloads
+   journalctl --user -u ollama -f
+   ```
+
+3. Verify Ollama API is accessible:
+   ```bash
+   curl http://localhost:11434/api/tags
+   ```
+
+### Visual Analysis Not Working
+
+If visual analysis fails:
+1. Ensure Ollama service is running
+2. Verify the LLaVA model is installed:
+   ```bash
    ollama list
    ```
-
-3. **Form detection issues**
-   - Check website anti-bot measures
-   - Adjust browser settings in `config/browser_settings.py`
-   - Update form detection prompts in `config/prompts/`
-   - Consider manual form mapping for complex sites
-
-4. **Connection issues**
-
-   ```bash
-   # Check service logs
-   docker-compose logs -f
-   
-   # Verify network connectivity
-   curl -I http://localhost:8501
-   ```
-
-## Support
-
-For support, please open an issue on our [GitHub repository](https://github.com/yourusername/coboarding/issues).
+3. Check for error messages in the application logs
+4. Make sure you're using the `--visual` flag when running the application
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
+## Contributing
 
-*coBoarding - Making job applications easier, one form at a time.*
-```
-
-## Project Implementation Summary
-
-This comprehensive coBoarding implementation provides:
-
-### ✅ **Core Features**
-- **Multi-language Support**: Full Polish, English, German localization
-- **AI-Powered CV Parsing**: LLaVA-1.5-7B for visual docs, Mistral-7B for text processing
-- **Advanced Form Detection**: DOM + Visual + Tab navigation analysis
-- **Stealth Automation**: Botright framework with anti-detection measures
-- **Real-time Chat Interface**: Streamlit-based UI with AI assistant
-
-### ✅ **Business Model Implementation**
-- **Monthly Subscription**: $50 USD for unlimited access to "Open to Work" candidates
-- **Pay-per-View**: $10 USD per detailed candidate profile
-- **LinkedIn API Integration**: Official partnership-based access
-- **Multi-channel Notifications**: Slack, Teams, Gmail, WhatsApp
-
-### ✅ **Compliance & Security**
-- **GDPR Compliance**: Automatic 24-hour data deletion with Redis TTL
-- **Data Protection**: Encrypted storage and secure API access
-- **AI Bias Monitoring**: Built-in compliance for employment laws
-- **Rate Limiting**: Protection against abuse
-
-### ✅ **Technical Architecture**
-- **Microservices Design**: Separate API, UI, and worker containers
-- **Local AI Models**: No cloud dependencies, full privacy control
-- **Event-driven Architecture**: Real-time notifications and processing
-- **Scalable Storage**: Redis with automatic cleanup and monitoring
-
-### ✅ **International Deployment**
-- **Multi-country Support**: Ready for Poland, Germany, US markets
-- **Localized Content**: Native language prompts and UI
-- **Currency Support**: USD pricing with multi-currency capability
-- **Legal Compliance**: GDPR, employment laws, data protection
-
-### 🚀 **Quick Start Commands**
-
-```bash
-# 1. Setup environment
-git clone <repository>
-cp .env.example .env
-
-# 2. Install dependencies  
-pip install -r requirements.txt
-python -m spacy download en_core_web_sm pl_core_news_sm de_core_news_sm
-
-# 3. Start services
-docker-compose up -d
-
-# 4. Download AI models
-ollama pull llava:7b
-ollama pull mistral:7b
-
-# 5. Access application
-open http://localhost:8501
-```
-
-### 📊 **Expected Performance**
-- **CV Processing**: 10-30 seconds per document
-- **Form Detection**: 5-15 seconds per page
-- **Application Completion**: 2-5 minutes per job
-- **Notification Delivery**: Under 30 seconds
-- **Daily Capacity**: 100+ applications per instance
-
-### 💰 **Revenue Projections**
-- **Target**: 1000 employers x $50/month = $50,000 MRR
-- **Pay-per-view**: 500 profiles x $10 = $5,000 additional monthly
-- **Growth potential**: Scale to enterprise packages at $500-2000/month
-
+Contributions are welcome! Please feel free to submit a Pull Request.

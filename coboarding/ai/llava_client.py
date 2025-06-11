@@ -44,20 +44,26 @@ class LLaVAClient:
                 # Convert to bytes
                 buffered = io.BytesIO()
                 img.save(buffered, format="JPEG")
-                img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                img_bytes = buffered.getvalue()
+                img_str = base64.b64encode(img_bytes).decode('utf-8')
             
-            # Prepare the request payload
+            # Prepare the request payload for chat completion
             payload = {
                 "model": self.model_name,
-                "prompt": prompt,
-                "images": [img_str],
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                        "images": [img_str]
+                    }
+                ],
                 "stream": False
             }
             
-            # Make the request
+            # Make the request to the chat completion endpoint
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
-                    f"{self.base_url}/api/generate",
+                    f"{self.base_url}/api/chat",
                     json=payload,
                     headers={"Content-Type": "application/json"}
                 )
@@ -65,7 +71,7 @@ class LLaVAClient:
                 
                 result = response.json()
                 return {
-                    "response": result.get("response", ""),
+                    "response": result.get("message", {}).get("content", ""),
                     "model": result.get("model", ""),
                     "created_at": result.get("created_at", "")
                 }

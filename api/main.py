@@ -10,7 +10,13 @@ import logging
 import os
 
 # Import routers
-from .routes import candidates, upload, automation, admin, analyze
+from .routes import (
+    candidates_router,
+    upload_router,
+    automation_router,
+    admin_router,
+    analyze_router
+)
 from .middleware.auth import verify_api_key
 from .middleware.rate_limit import rate_limit_middleware
 from .middleware.compliance import compliance_middleware
@@ -43,31 +49,32 @@ app.middleware("http")(compliance_middleware)
 
 # Include routers
 app.include_router(
-    candidates.router,
+    candidates_router,
     prefix="/api/candidates",
     tags=["candidates"],
     dependencies=[Depends(verify_api_key)],
 )
 app.include_router(
-    upload.router,
+    upload_router,
     prefix="/api/upload",
     tags=["upload"],
     dependencies=[Depends(verify_api_key)],
 )
 app.include_router(
-    automation.router,
+    automation_router,
     prefix="/api/automation",
     tags=["automation"],
     dependencies=[Depends(verify_api_key)],
 )
 app.include_router(
-    admin.router,
+    admin_router,
     prefix="/api/admin",
     tags=["admin"],
+    dependencies=[Depends(verify_api_key)],
 )
 
 app.include_router(
-    analyze.router,
+    analyze_router,
     prefix="/api/analyze",
     tags=["analyze"],
     dependencies=[Depends(verify_api_key)],

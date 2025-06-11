@@ -2,9 +2,17 @@
 Test configuration and fixtures for the coBoarding test suite.
 """
 import os
+import sys
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
+
+# Mock hcaptcha_challenger.agents before any imports
+sys.modules['hcaptcha_challenger.agents'] = MagicMock()
+
+# Mock the AgentT class
+AgentT = MagicMock()
+sys.modules['hcaptcha_challenger.agents'].AgentT = AgentT
 
 # Add the project root to the Python path
 import sys
@@ -22,9 +30,11 @@ os.environ.update({
 @pytest.fixture(scope="module")
 def test_client():
     """Create a test client for the FastAPI application."""
-    from api.main import app
-    with TestClient(app) as client:
-        yield client
+    # Apply the mock before importing app
+    with patch.dict('sys.modules', {'hcaptcha_challenger.agents': MagicMock()}):
+        from api.main import app
+        with TestClient(app) as client:
+            yield client
 
 @pytest.fixture
 def mock_redis():

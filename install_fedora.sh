@@ -374,6 +374,36 @@ main() {
     check_system
     install_system_deps
     setup_python_env
+    
+    # Install Ollama and LLaVA model
+    if ! command -v ollama &> /dev/null; then
+        log "Installing Ollama..."
+        curl -fsSL https://ollama.com/install.sh | sh
+        
+        # Add current user to ollama group
+        sudo usermod -aG ollama $USER
+        
+        # Start and enable the service
+        sudo systemctl enable ollama
+        sudo systemctl start ollama
+        
+        # Wait for the service to start
+        sleep 5
+    fi
+    
+    # Install LLaVA model if not already installed
+    log "Checking for LLaVA model..."
+    if command -v ollama &> /dev/null; then
+        if ! ollama list | grep -q "llava"; then
+            log "Pulling LLaVA model (this may take a while)..."
+            ollama pull llava:7b
+        else
+            log "LLaVA model is already installed."
+        fi
+    else
+        warn "Ollama not found. Please install it manually to use LLaVA features."
+    fi
+    
     verify_installation
     
     log "\n🎉 Installation completed successfully! 🎉"

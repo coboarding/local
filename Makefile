@@ -1,9 +1,10 @@
-.PHONY: install test run clean
+.PHONY: install test run clean setup-ollama start-ollama stop-ollama check-ollama
 
 # Variables
 VENV = venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
+OLLAMA_URL = http://localhost:11434
 
 # Install dependencies
 install:
@@ -48,7 +49,33 @@ apply-job:
 
 # Run with visual analysis enabled
 apply-job-visual:
-	$(PYTHON) -m coboarding.automation.job_applicator --url https://example.com/job-application --visual
+	$(PYTHON) -m coboarding.automation.job_applicator --url $(URL) --visual
+
+# Setup Ollama and LLaVA model
+setup-ollama:
+	chmod +x install_ollama.sh
+	./install_ollama.sh
+
+# Start Ollama service
+start-ollama:
+	sudo systemctl start ollama
+	@echo "Ollama service started. Waiting for it to be ready..."
+	@until curl -s $(OLLAMA_URL)/api/tags >/dev/null; do sleep 1; done
+	@echo "Ollama is ready!"
+
+# Stop Ollama service
+stop-ollama:
+	sudo systemctl stop ollama
+	@echo "Ollama service stopped"
+
+# Check Ollama status
+check-ollama:
+	@if curl -s $(OLLAMA_URL)/api/tags >/dev/null; then \
+		echo "Ollama is running"; \
+	else \
+		echo "Ollama is not running"; \
+		exit 1; \
+	fi
 
 # Prepare test files for upload
 setup-test-files:

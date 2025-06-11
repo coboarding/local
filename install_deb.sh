@@ -839,6 +839,20 @@ main() {
     create_project_structure
     install_python_deps
     install_ollama
+    
+    # Install LLaVA model if not already installed
+    log "Checking for LLaVA model..."
+    if command -v ollama &> /dev/null; then
+        if ! ollama list | grep -q "llava"; then
+            log "Pulling LLaVA model (this may take a while)..."
+            ollama pull llava:7b
+        else
+            log "LLaVA model is already installed."
+        fi
+    else
+        warn "Ollama not found. Please install it manually to use LLaVA features."
+    fi
+    
     create_env_config
     create_docker_config
     configure_services
